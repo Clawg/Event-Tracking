@@ -1,57 +1,64 @@
-// Used for testing clickthroughs, details added to google analytics
-// Just a comment for testing
-	function tracking() {
+/* 
+Author C.Law
+Script works in conjunction with Google Analytics event tracking to track clicks on any anchor element.
 
+Instead of being required to attach events to individual elements, this script uses a combination of 
+attribute selectors and event bubbling to identify what has been clicked on and push it to GA.
+
+Within the HTML the containing element should contain the data attribute data-track-wname, a click event is added to any element
+that has this attribute.  When any element that sits within this container is clicked, the event bubbles up and identifies what element 
+was clicked on.  Additional (though not necssary) data attributes have been added to pass additional information through.  This will be
+dependant on the data you wish to capture.
+
+As its the target that is retured and tests are required to check that it is an <a> tag, and if not find the closest <a>
+
+HTML container would look like so
+
+<div data-track-wname="navigation" data-track-wview="tertiarynavigation"></div>
+
+*/
+
+
+
+// Used for testing clickthroughs, details added to google analytics
+	function tracking() {
+		// A few elements need targeted specifically, but generally the click can be trapped via the attribute selector
 		$('[data-track-wname]').click( function(e) {
 			
 				e.preventDefault();
-				var $target = $(e.target); 
-
-				// If this link is clicked get the widget name and widget view
-				if ( $target.is('a') || $target.parent().is('a') ) {
-					var container = $target.closest('[data-track-wname]').eq(0);
-					var wname = container.attr('data-track-wname');
-					var wview = container.attr('data-track-wview');
-				}						
 				
-				// If a link is clicked
-					if($target.is('a') ) {						
-						var linkText = removeSpaces($(e.target).text())
-						if (linkText.length == 0) linkText = $(e.target).attr('href');
-						//_gaq.push(['_trackEvent', areaTitle, linkText, 'ANCHOR']);						
-					}; 	
-									
-					
-				// If an element containing text that is wrapped by a link
-					if($target.parent().is('a')) {
-						
-						
-						if( $target.is('span') || $target.is('abbr') || $target.is('strong') || $target.is('b') ) {						
-							var linkText = removeSpaces($(e.target).text())							
-						}; 
-
-						if( $target.is('img') ) {
-							if ($target.attr('alt') !=  undefined) {
+				var $target = $(e.target); 
+				var container = $target.closest('[data-track-wname]').eq(0);
+				var wname = container.attr('data-track-wname');
+				var wview = container.attr('data-track-wview');
+				
+				// If the element clicked is a sibling of an anchor element
+					if ($target.closest('a').length > 0) {
+						if($target.is('a') ) { // If the target is an anchor tag	 					
+							var linkText = removeSpaces($(e.target).text())						
+							if (linkText.length == 0) linkText = $(e.target).attr('href');						
+						} else if($target.is('img') ) { // If the target is an image
+							if ($target.attr('alt') !=  undefined) { // If the image has a alt attribute
 								var linkText = removeSpaces($(e.target).attr('alt'));
-								if (linkText.length == 0) linkText = $(e.target).parent().attr('href');	
+								if (linkText.length == 0) linkText = $(e.target).closest('a').attr('href');	// If the alt attriubte has no text use the surrounding anchors href value
 							} else {
-								linkText = $(e.target).parent().attr('href');	
+								linkText = $(e.target).closest('a').attr('href');
 							}
-						}; 
-						
-					}				
-					
-				// Pass to Google tracking	
-					console.log(wname + ' ' + wview + ' ' + linkText);	
-					//_gaq.push(['_trackEvent', areaTitle, altText, 'IMG'])
-					
-					
+						} else {
+							var linkText = removeSpaces($(e.target).text())
+						}
+						_gaq.push(['_trackEvent', wname, wview, linkText]);						 											
+					}
+				
+				// Track button clicks too
+					if($target.is('button') || $target.parent().is('button')) {		
+							var linkText = removeSpaces($(e.target).text())
+							_gaq.push(['_trackEvent', wname, wview, linkText]);						
+					}								
 		})
 	}
 	
-	// Remove whitespace from string
-		function removeSpaces(string) {
-		 return string.split(' ').join('');
-		}
-	
-
+// Remove whitespace from string
+	function removeSpaces(string) {
+		return string.split(' ').join('');
+	}
